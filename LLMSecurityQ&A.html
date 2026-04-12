@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LLM Security Questionnaire — Pre-Sales & Scoping Tool</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg: #0a0d13;
+    --surface: #111520;
+    --surface2: #161b28;
+    --surface3: #1c2335;
+    --border: #242d42;
+    --border2: #2e3a52;
+    --accent: #00d4ff;
+    --accent2: #0099cc;
+    --accent-dim: rgba(0,212,255,0.08);
+    --accent-glow: rgba(0,212,255,0.2);
+    --text: #e2e8f4;
+    --text2: #8fa3c0;
+    --text3: #566a85;
+    --high: #ff4d6a;
+    --medium: #f59e0b;
+    --low: #22c55e;
+    --tag-bg: rgba(0,212,255,0.1);
+    --font-main: 'IBM Plex Sans', sans-serif;
+    --font-mono: 'IBM Plex Mono', monospace;
+    --radius: 8px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-main);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── GRID NOISE BACKGROUND ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background-image:
+      linear-gradient(rgba(0,212,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,212,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    position: relative; z-index: 10;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,212,255,0.04) 0%, transparent 100%);
+    padding: 0 2rem;
+  }
+  .header-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; gap: 2rem;
+    padding: 1.25rem 0;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 0.75rem;
+    flex-shrink: 0;
+  }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.2rem;
+    box-shadow: 0 0 20px var(--accent-glow);
+  }
+  .logo-text { line-height: 1.2; }
+  .logo-title {
+    font-size: 1rem; font-weight: 700; color: var(--accent);
+    letter-spacing: 0.05em; text-transform: uppercase;
+    font-family: var(--font-mono);
+  }
+  .logo-sub { font-size: 0.72rem; color: var(--text3); letter-spacing: 0.03em; }
+
+  .header-meta {
+    margin-left: auto; display: flex; align-items: center; gap: 1rem;
+  }
+  .stat-pill {
+    font-family: var(--font-mono);
+    font-size: 0.72rem; color: var(--text2);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px; padding: 0.3rem 0.8rem;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .stat-pill strong { color: var(--accent); }
+  .dl-all-btn {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #000; font-weight: 700; font-size: 0.8rem;
+    letter-spacing: 0.04em; text-transform: uppercase;
+    border: none; border-radius: var(--radius);
+    padding: 0.55rem 1.2rem; cursor: pointer;
+    transition: all 0.2s; white-space: nowrap;
+    font-family: var(--font-mono);
+    box-shadow: 0 0 16px var(--accent-glow);
+  }
+  .dl-all-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 28px var(--accent-glow);
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .layout {
+    max-width: 1400px; margin: 0 auto;
+    display: grid; grid-template-columns: 300px 1fr;
+    gap: 0; min-height: calc(100vh - 73px);
+    position: relative; z-index: 1;
+  }
+
+  /* ── SIDEBAR ── */
+  aside {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    position: sticky; top: 0; height: calc(100vh - 73px);
+    overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  }
+
+  .sidebar-header {
+    padding: 1.25rem 1.25rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0; z-index: 5;
+    background: var(--surface);
+  }
+  .sidebar-label {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text3);
+    font-family: var(--font-mono); margin-bottom: 0.75rem;
+  }
+  .search-box {
+    display: flex; align-items: center; gap: 0.5rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.5rem 0.75rem;
+    transition: border-color 0.2s;
+  }
+  .search-box:focus-within { border-color: var(--accent); }
+  .search-box span { color: var(--text3); font-size: 0.85rem; }
+  .search-box input {
+    background: none; border: none; outline: none;
+    color: var(--text); font-size: 0.8rem; width: 100%;
+    font-family: var(--font-main);
+  }
+  .search-box input::placeholder { color: var(--text3); }
+
+  .filter-row {
+    display: flex; gap: 0.4rem; flex-wrap: wrap;
+    margin-top: 0.65rem;
+  }
+  .filter-chip {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.06em;
+    padding: 0.25rem 0.6rem; border-radius: 20px; cursor: pointer;
+    border: 1px solid transparent; transition: all 0.15s;
+    text-transform: uppercase; font-family: var(--font-mono);
+  }
+  .filter-chip.all { border-color: var(--border2); color: var(--text2); }
+  .filter-chip.all.active { background: var(--accent); border-color: var(--accent); color: #000; }
+  .filter-chip.high { border-color: rgba(255,77,106,0.4); color: var(--high); }
+  .filter-chip.high.active { background: var(--high); border-color: var(--high); color: #fff; }
+  .filter-chip.medium { border-color: rgba(245,158,11,0.4); color: var(--medium); }
+  .filter-chip.medium.active { background: var(--medium); border-color: var(--medium); color: #000; }
+  .filter-chip.low { border-color: rgba(34,197,94,0.4); color: var(--low); }
+  .filter-chip.low.active { background: var(--low); border-color: var(--low); color: #000; }
+
+  /* Category list */
+  .cat-list { padding: 0.75rem 0; }
+  .cat-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.6rem 1.25rem;
+    cursor: pointer; transition: all 0.15s;
+    border-left: 2px solid transparent;
+    position: relative;
+  }
+  .cat-item:hover { background: var(--surface2); }
+  .cat-item.active {
+    background: var(--accent-dim);
+    border-left-color: var(--accent);
+  }
+  .cat-item.active .cat-name { color: var(--accent); }
+  .cat-icon {
+    font-size: 0.9rem; flex-shrink: 0;
+    width: 24px; text-align: center;
+  }
+  .cat-name {
+    font-size: 0.78rem; color: var(--text2); flex: 1; line-height: 1.3;
+    transition: color 0.15s;
+  }
+  .cat-count {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    background: var(--surface3); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.1rem 0.45rem; color: var(--text3);
+    flex-shrink: 0;
+  }
+  .cat-item.active .cat-count {
+    background: var(--accent-dim); border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── MAIN CONTENT ── */
+  main {
+    overflow-y: auto; max-height: calc(100vh - 73px);
+    scrollbar-width: thin; scrollbar-color: var(--border2) transparent;
+  }
+
+  /* Welcome screen */
+  .welcome {
+    display: flex; flex-direction: column; align-items: center;
+    justify-content: center; padding: 4rem 2rem;
+    text-align: center; min-height: 80vh;
+  }
+  .welcome-icon {
+    font-size: 4rem; margin-bottom: 1.5rem;
+    filter: drop-shadow(0 0 20px rgba(0,212,255,0.3));
+  }
+  .welcome h2 {
+    font-size: 1.8rem; font-weight: 700; margin-bottom: 0.75rem;
+    color: var(--text);
+    background: linear-gradient(135deg, var(--text) 0%, var(--accent) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .welcome p { color: var(--text2); max-width: 500px; line-height: 1.7; margin-bottom: 1rem; }
+  .welcome-tags {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    justify-content: center; margin-top: 1.5rem;
+  }
+  .tag {
+    font-family: var(--font-mono); font-size: 0.7rem;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 0.3rem 0.7rem; color: var(--text3);
+  }
+
+  /* Category view */
+  .cat-view { padding: 2rem 2rem 4rem; }
+
+  .cat-view-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    margin-bottom: 1.75rem; gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .cat-view-title-block {}
+  .cat-view-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  .cat-view-title {
+    font-size: 1.5rem; font-weight: 700; color: var(--text);
+    margin-bottom: 0.3rem; line-height: 1.2;
+  }
+  .cat-view-meta {
+    display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;
+    margin-top: 0.4rem;
+  }
+  .meta-badge {
+    font-family: var(--font-mono); font-size: 0.68rem;
+    padding: 0.2rem 0.6rem; border-radius: 4px;
+    border: 1px solid var(--border);
+    color: var(--text2); background: var(--surface2);
+  }
+
+  .cat-view-actions {
+    display: flex; gap: 0.75rem; flex-shrink: 0; align-items: flex-start;
+    margin-top: 0.5rem;
+  }
+  .btn {
+    display: flex; align-items: center; gap: 0.4rem;
+    padding: 0.5rem 1rem; border-radius: var(--radius);
+    font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em;
+    cursor: pointer; transition: all 0.2s; border: 1px solid;
+    font-family: var(--font-mono); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .btn-primary {
+    background: var(--accent); border-color: var(--accent); color: #000;
+    box-shadow: 0 0 12px var(--accent-glow);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 0 24px var(--accent-glow); transform: translateY(-1px);
+  }
+  .btn-secondary {
+    background: transparent; border-color: var(--border2); color: var(--text2);
+  }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Priority progress bars */
+  .priority-summary {
+    display: flex; gap: 1.5rem; flex-wrap: wrap;
+    margin-bottom: 1.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 1rem 1.25rem;
+  }
+  .prio-bar { flex: 1; min-width: 100px; }
+  .prio-label {
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 0.68rem; color: var(--text3); margin-bottom: 0.35rem;
+    font-family: var(--font-mono);
+  }
+  .prio-label strong { color: var(--text2); }
+  .bar-track {
+    height: 4px; background: var(--border); border-radius: 2px; overflow: hidden;
+  }
+  .bar-fill { height: 100%; border-radius: 2px; transition: width 0.5s ease; }
+  .bar-high { background: var(--high); }
+  .bar-medium { background: var(--medium); }
+  .bar-low { background: var(--low); }
+
+  /* Table */
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+
+  thead { background: var(--surface2); }
+  thead th {
+    padding: 0.75rem 1rem; text-align: left;
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    font-family: var(--font-mono);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap; user-select: none; cursor: pointer;
+    transition: color 0.15s;
+  }
+  thead th:hover { color: var(--accent); }
+  thead th.sort-asc::after { content: ' ↑'; color: var(--accent); }
+  thead th.sort-desc::after { content: ' ↓'; color: var(--accent); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.12s;
+    cursor: pointer;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--accent-dim); }
+  tbody tr.expanded { background: var(--accent-dim); }
+
+  td { padding: 0.85rem 1rem; vertical-align: top; }
+  td.td-num {
+    font-family: var(--font-mono); font-size: 0.65rem;
+    color: var(--text3); width: 36px; text-align: center;
+    padding-top: 1rem;
+  }
+  td.td-q { color: var(--text); line-height: 1.5; font-weight: 500; }
+  td.td-orig {
+    font-family: var(--font-mono); font-size: 0.73rem;
+    color: var(--accent2); line-height: 1.4;
+    max-width: 220px;
+  }
+  td.td-why { color: var(--text2); line-height: 1.5; font-size: 0.8rem; }
+  td.td-prio { width: 80px; }
+  td.td-expand { width: 30px; text-align: center; color: var(--text3); }
+
+  .priority-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font-family: var(--font-mono); font-size: 0.65rem; font-weight: 600;
+    padding: 0.2rem 0.55rem; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .priority-badge.high { background: rgba(255,77,106,0.12); color: var(--high); border: 1px solid rgba(255,77,106,0.3); }
+  .priority-badge.medium { background: rgba(245,158,11,0.12); color: var(--medium); border: 1px solid rgba(245,158,11,0.3); }
+  .priority-badge.low { background: rgba(34,197,94,0.12); color: var(--low); border: 1px solid rgba(34,197,94,0.3); }
+
+  /* Expandable row details */
+  .detail-row td {
+    padding: 0; border-top: none;
+    background: linear-gradient(180deg, var(--accent-dim) 0%, transparent 100%);
+  }
+  .detail-inner {
+    display: grid; grid-template-columns: 1fr 1fr 1fr;
+    gap: 1px; background: var(--border);
+  }
+  .detail-cell {
+    background: var(--surface); padding: 1rem 1.25rem;
+  }
+  .detail-cell:first-child { background: var(--surface2); }
+  .detail-label {
+    font-size: 0.62rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    font-family: var(--font-mono); margin-bottom: 0.5rem;
+  }
+  .detail-value { font-size: 0.8rem; color: var(--text2); line-height: 1.6; }
+  .detail-value.mono {
+    font-family: var(--font-mono); font-size: 0.75rem; color: var(--accent2);
+  }
+
+  /* Chevron */
+  .chevron {
+    display: inline-block; transition: transform 0.2s;
+    font-style: normal; font-size: 0.7rem; color: var(--text3);
+  }
+  .expanded .chevron { transform: rotate(90deg); }
+
+  /* Copy button */
+  .copy-btn {
+    background: none; border: 1px solid var(--border); border-radius: 4px;
+    color: var(--text3); font-size: 0.65rem; padding: 0.15rem 0.4rem;
+    cursor: pointer; font-family: var(--font-mono); margin-left: 0.4rem;
+    transition: all 0.15s; vertical-align: middle;
+  }
+  .copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .copy-btn.copied { border-color: var(--low); color: var(--low); }
+
+  /* Quick reference panel */
+  .quick-ref {
+    margin-top: 2.5rem; padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+  }
+  .quick-ref-title {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--text3);
+    font-family: var(--font-mono); margin-bottom: 1rem;
+  }
+  .quick-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+  .quick-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 0.9rem 1rem;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .quick-card:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .qc-label {
+    font-size: 0.62rem; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3);
+    font-family: var(--font-mono); margin-bottom: 0.4rem;
+  }
+  .qc-value { font-size: 0.82rem; color: var(--text2); line-height: 1.4; }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center; padding: 4rem 2rem; color: var(--text3);
+  }
+  .empty-state span { font-size: 2.5rem; display: block; margin-bottom: 1rem; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent2); }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 1000;
+    background: var(--surface2); border: 1px solid var(--accent);
+    border-radius: var(--radius); padding: 0.75rem 1.25rem;
+    color: var(--accent); font-size: 0.82rem; font-family: var(--font-mono);
+    box-shadow: 0 4px 24px rgba(0,212,255,0.2);
+    transform: translateY(100px); opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    pointer-events: none;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .layout { grid-template-columns: 1fr; }
+    aside { position: relative; height: auto; max-height: 300px; }
+    main { max-height: none; }
+    .header-inner { flex-wrap: wrap; gap: 0.75rem; }
+    .detail-inner { grid-template-columns: 1fr; }
+    .stat-pill { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🔐</div>
+      <div class="logo-text">
+        <div class="logo-title">LLM Security Q&amp;A</div>
+        <div class="logo-sub">Pre-Sales &amp; Scoping Reference Tool</div>
+      </div>
+    </div>
+    <div class="header-meta">
+      <div class="stat-pill">
+        <span>📋</span> <strong id="total-q">192</strong> Questions
+      </div>
+      <div class="stat-pill">
+        <span>🗂️</span> <strong id="total-cats">25</strong> Categories
+      </div>
+      <div class="stat-pill">
+        <span>⚡</span> <strong id="high-count">—</strong> High Priority
+      </div>
+      <button class="dl-all-btn" onclick="downloadAll()">
+        ⬇ Download All (.xlsx)
+      </button>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside>
+    <div class="sidebar-header">
+      <div class="sidebar-label">🗂 Categories</div>
+      <div class="search-box">
+        <span>🔍</span>
+        <input type="text" id="search-input" placeholder="Search questions…" oninput="handleSearch(this.value)">
+      </div>
+      <div class="filter-row">
+        <div class="filter-chip all active" onclick="setFilter('all', this)">All</div>
+        <div class="filter-chip high" onclick="setFilter('High', this)">🔴 High</div>
+        <div class="filter-chip medium" onclick="setFilter('Medium', this)">🟡 Med</div>
+        <div class="filter-chip low" onclick="setFilter('Low', this)">🟢 Low</div>
+      </div>
+    </div>
+    <div class="cat-list" id="cat-list"></div>
+  </aside>
+
+  <main id="main-content">
+    <div class="welcome">
+      <div class="welcome-icon">🛡️</div>
+      <h2>LLM Security Scoping Tool</h2>
+      <p>Select a category from the left to explore security questions for <strong>pre-sales discussions</strong>, scoping calls, and assessment planning.</p>
+      <p style="margin-top: 0.5rem; font-size: 0.85rem;">Covers <strong>192 questions</strong> across 25 security domains — merged and deduplicated from two expert questionnaires.</p>
+      <div class="welcome-tags">
+        <span class="tag">🎯 Prompt Injection</span>
+        <span class="tag">🔗 RAG Security</span>
+        <span class="tag">🔑 Supply Chain</span>
+        <span class="tag">📊 Governance</span>
+        <span class="tag">🛡️ Red Teaming</span>
+        <span class="tag">🔒 Data Privacy</span>
+        <span class="tag">📡 API Security</span>
+        <span class="tag">📋 Compliance</span>
+        <span class="tag">🔍 Logging</span>
+        <span class="tag">⚡ Rate Limiting</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════════════
+const DATA = {"AI-Enabled Applications in Scope":[{"Category":"AI-Enabled Applications in Scope","Question":"Which AI/LLM-powered applications or features are currently live in production and what do they do?","Original Technical Question":"What AI/LLM-powered applications are in production and what is their function?","Why We Ask This":"We cannot test or train on what we do not know about. A complete inventory of live AI systems is the starting point.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Which AI systems are actively being developed or are planned for release in the next 6 months?","Original Technical Question":"What AI systems are in development or planned for release within 6 months?","Why We Ask This":"Forward-looking coverage ensures our training and testing plans are relevant to where the organisation is going, not just where it is today.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Which base LLM model is used by each AI application — for example GPT-4, Claude, Llama, Gemini, or a fine-tuned variant?","Original Technical Question":"What base LLM models are used per application (GPT-4, Claude, Llama, fine-tuned)?","Why We Ask This":"The base model determines known vulnerabilities, applicable attack techniques, and the trust level we should assign to outputs.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Are any of the AI systems considered high-risk — for example systems used in financial decisions, healthcare, HR, or legal contexts?","Original Technical Question":"Are any AI systems classified as high-risk use cases (finance, healthcare, HR, legal)?","Why We Ask This":"High-risk use cases require stricter controls, additional oversight, and more intensive security testing.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Who are the end users of each AI system — internal employees, external customers, or both — and what access level do they have?","Original Technical Question":"Who are the end users and what access levels do they have per AI system?","Why We Ask This":"User type determines the attack surface and the severity of potential harm from a security failure.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Is there an architecture or data flow diagram for each AI system that shows all components, data sources, and external dependencies?","Original Technical Question":"Are architecture/data flow diagrams available showing components, data sources, and dependencies?","Why We Ask This":"A diagram is the fastest way to identify all integration points, trust boundaries, and areas that need security testing.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Does the AI system use agents or autonomous workflows — where the AI can take actions without a human approving each step?","Original Technical Question":"Are autonomous AI agents or agentic workflows in use without human-in-the-loop approval?","Why We Ask This":"Autonomous AI agents have a much larger attack surface because a compromised agent can take real-world actions at scale.","Priority":"High","Source":"Session 2"},{"Category":"AI-Enabled Applications in Scope","Question":"Is Retrieval-Augmented Generation (RAG) used — and if so, what data sources does it retrieve from?","Original Technical Question":"Is RAG implemented, and what data sources does it retrieve from?","Why We Ask This":"RAG systems retrieve real documents to answer questions. The security of those documents and the retrieval process is critical.","Priority":"High","Source":"Session 2"}],"Audience & Learner Profiles":[{"Category":"Audience & Learner Profiles","Question":"Who will attend the training — AppSec engineers, GRC analysts, developers, architects, or a mixed audience?","Original Technical Question":"What are the roles and disciplines of training participants?","Why We Ask This":"Different roles need different content. A mixed audience needs a curriculum that speaks to each group without losing anyone.","Priority":"High","Source":"Session TR"},{"Category":"Audience & Learner Profiles","Question":"What is the current skill level of participants in AI/ML concepts and LLM security — beginner, intermediate, or advanced?","Original Technical Question":"What is the baseline AI/LLM security skill level of participants?","Why We Ask This":"Pitching the content at the wrong level is the most common reason training fails. Calibration upfront is essential.","Priority":"High","Source":"Session TR"},{"Category":"Audience & Learner Profiles","Question":"Has any member of the team done AI red teaming or LLM security testing before — and if so, at what level?","Original Technical Question":"What prior AI red teaming or LLM security testing experience exists in the team?","Why We Ask This":"Prior experience lets us skip basics for experienced participants and ensures the content adds genuine new value.","Priority":"High","Source":"Session TR"},{"Category":"Audience & Learner Profiles","Question":"How many participants are expected across all training sessions?","Original Technical Question":"What is the expected participant count across all training sessions?","Why We Ask This":"Participant count affects session design, breakout exercises, and the level of individual attention we can provide.","Priority":"Medium","Source":"Session TR"},{"Category":"Audience & Learner Profiles","Question":"Are there any participants who will act as internal champions or trainers after the engagement — people we should pay special attention to?","Original Technical Question":"Are internal champions or train-the-trainer participants identified?","Why We Ask This":"Training internal champions creates a multiplier effect, spreading knowledge beyond the initial cohort.","Priority":"Medium","Source":"Session TR"}],"Build Priorities & Forward-Looking Coverage":[{"Category":"Build Priorities & Forward-Looking Coverage","Question":"What new AI features or systems are currently being actively developed — so our testing and training can be forward-looking?","Original Technical Question":"What new AI features or systems are in active development?","Why We Ask This":"Testing only what exists today means we will be behind when new systems go live. We need to plan ahead.","Priority":"High","Source":"Session 2"},{"Category":"Build Priorities & Forward-Looking Coverage","Question":"Are there plans to move from current models to more capable or agentic AI systems in the near future?","Original Technical Question":"Are there plans to migrate to more capable or agentic AI systems?","Why We Ask This":"More capable and agentic systems introduce new risk categories that need to be included in the training curriculum now.","Priority":"High","Source":"Session 2"},{"Category":"Build Priorities & Forward-Looking Coverage","Question":"Is fine-tuning of base models planned or already happening — and if so, on what data?","Original Technical Question":"Is model fine-tuning planned or in progress, and on what training data?","Why We Ask This":"Fine-tuning on sensitive data introduces risks of training data extraction and model behaviour changes.","Priority":"Medium","Source":"Session 2"},{"Category":"Build Priorities & Forward-Looking Coverage","Question":"Are there plans to expand the tools or external systems the AI can access in the future?","Original Technical Question":"Are there plans to expand AI tool access or external system integrations?","Why We Ask This":"Tool expansion increases the attack surface. We need to test security controls for planned tools before they go live.","Priority":"Medium","Source":"Session 2"}],"Constraints, Rules of Engagement & Guardrails":[{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"What data handling requirements apply during security testing — for example, are we allowed to use real production data or only synthetic data?","Original Technical Question":"What data handling constraints apply during security testing (real vs synthetic data)?","Why We Ask This":"Data handling rules during testing determine what test scenarios are legally and contractually permitted.","Priority":"High","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"What approvals are needed before security testing can begin — who needs to sign off and how long does that take?","Original Technical Question":"What approval process and timelines are required before testing begins?","Why We Ask This":"Approval processes can delay testing. Understanding them upfront helps us plan timelines accurately.","Priority":"High","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"Are there any environments that are off-limits for testing — such as production systems, customer-facing endpoints, or third-party APIs?","Original Technical Question":"Which environments are out-of-bounds for testing (production, external APIs)?","Why We Ask This":"Clear boundaries prevent accidentally impacting live customers or triggering legal/contractual violations during testing.","Priority":"High","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"Are there specific testing techniques that are prohibited — for example, any form of active exploitation or social engineering?","Original Technical Question":"What testing techniques are explicitly prohibited?","Why We Ask This":"Prohibited techniques must be agreed upfront to avoid crossing legal or policy lines during the engagement.","Priority":"High","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"What are the communication and escalation rules during testing — who do we notify if we find a critical vulnerability?","Original Technical Question":"What are the escalation procedures for critical findings during testing?","Why We Ask This":"Clear escalation paths ensure that critical findings are handled quickly and do not sit unreported.","Priority":"High","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"Are there rate limits or capacity constraints that testers must respect to avoid disrupting the AI service?","Original Technical Question":"What rate limits and capacity constraints apply to testers?","Why We Ask This":"LLM inference is compute-heavy. Unrestricted testing can cause real outages if not properly scoped.","Priority":"Medium","Source":"Session 1"},{"Category":"Constraints, Rules of Engagement & Guardrails","Question":"Is there a bug bounty or responsible disclosure program in place for AI vulnerabilities?","Original Technical Question":"Is there a bug bounty or responsible disclosure program for AI vulnerabilities?","Why We Ask This":"A disclosure program tells us how to handle findings and whether external researchers are already reporting issues.","Priority":"Low","Source":"Session 1"}],"Current Testing Capabilities & Coverage":[{"Category":"Current Testing Capabilities & Coverage","Question":"What AI/LLM systems are currently being security tested, and what is included in the scope?","Original Technical Question":"What is the current AI/LLM security testing scope?","Why We Ask This":"We need to know exactly what is already being tested so we can identify blind spots and avoid duplicating effort.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"How is AI security testing done today — manually, automated, or a mix of both?","Original Technical Question":"What is the AI security testing methodology (manual/automated)?","Why We Ask This":"This tells us how mature the testing process is and where automation or tooling gaps exist.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"How often is security testing done — is it continuous, on a schedule, or triggered by specific events like releases?","Original Technical Question":"What is the AI security testing frequency and cadence?","Why We Ask This":"Frequency determines how quickly new vulnerabilities are caught after code or model changes.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"Who owns AI security testing today — an internal team, an external vendor, or a shared responsibility?","Original Technical Question":"Who is accountable for AI security testing ownership?","Why We Ask This":"Ownership clarity tells us who to coordinate with and ensures no gaps where nobody is accountable.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"Are there any AI components, environments, or data types intentionally excluded from testing, and why?","Original Technical Question":"What is explicitly out-of-scope for AI security testing?","Why We Ask This":"Knowing what is out of scope prevents misunderstandings and helps us assess whether those exclusions are acceptable.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"How are test findings documented, who reviews them, and what is the expected time to fix critical issues?","Original Technical Question":"What is the vulnerability management and remediation SLA process?","Why We Ask This":"A vulnerability that is found but never fixed provides zero security value — we need to understand the remediation loop.","Priority":"High","Source":"Session 1"},{"Category":"Current Testing Capabilities & Coverage","Question":"Have previous AI security test reports been produced? Can we review them?","Original Technical Question":"Are prior AI security assessment reports available for review?","Why We Ask This":"Past reports give us a head-start on known risks and show the maturity of the existing security program.","Priority":"Medium","Source":"Session 1"}],"Data Privacy & PII":[{"Category":"Data Privacy & PII","Question":"How does the system find and hide personal data (names, emails, IDs) before the AI processes it?","Original Technical Question":"How is PII detected and redacted?","Why We Ask This":"Personally Identifiable Information must be identified and masked before it reaches the AI or is stored in logs.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"Is the history of AI conversations stored in an encrypted format?","Original Technical Question":"Are conversation histories encrypted?","Why We Ask This":"Stored conversations can contain sensitive information. Encryption protects them from unauthorized access.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"Are AI request logs cleaned to remove any personal or sensitive information before being stored?","Original Technical Question":"Are logs sanitized to avoid sensitive prompt storage?","Why We Ask This":"Logs that contain raw prompts may inadvertently store PII or confidential information.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"Do we have a clear policy for how long AI conversation data is kept and when it gets deleted?","Original Technical Question":"Is a data retention policy defined?","Why We Ask This":"Knowing how long data is kept — and when it is deleted — is a core compliance and privacy requirement.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"How does the AI system comply with privacy laws and regulations (e.g., GDPR, HIPAA)?","Original Technical Question":"How are regulatory requirements addressed?","Why We Ask This":"Regulations like GDPR, HIPAA, or local data protection laws may apply to AI systems. Compliance must be verified.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"What technical measures protect user privacy when data is sent to or processed by the AI?","Original Technical Question":"What Privacy-preserving processing controls are in place (e.g., tokenization/redaction, strict input validation, secure config)?","Why We Ask This":"Privacy controls reduce the risk of sensitive data being exposed through AI inputs or outputs.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"Is sensitive data (e.g., credit card numbers, SSNs) automatically hidden before it reaches the AI?","Original Technical Question":"Is data masking or anonymization in place for sensitive data?","Why We Ask This":"Masking ensures sensitive values are not exposed even if logs or outputs are accessed by unauthorized parties.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"Do we assess and document the privacy risk of any data shared with or used to train the AI?","Original Technical Question":"How is privacy risk examined and documented for data sharing or training?","Why We Ask This":"Data used for AI training must be reviewed for privacy risk and documented to ensure accountability.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"How long are AI logs kept, when are they deleted, and who is allowed to access them?","Original Technical Question":"What log retention and deletion periods are used, and what access restrictions to logs are in place?","Why We Ask This":"Retaining logs too long increases breach risk. Access controls limit who can view sensitive log data.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Data Privacy & PII","Question":"What layers of protection stop sensitive information from being accidentally revealed in AI responses?","Original Technical Question":"Please identify sensitive information disclosure controls (data sanitization; tokenization/redaction, Terms of Use; opt-out for training; don't rely solely on system prompt)?","Why We Ask This":"Multiple overlapping controls are needed to prevent sensitive data from leaking through AI outputs.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Deployment Environments & Access":[{"Category":"Deployment Environments & Access","Question":"Where is the AI system deployed — on-premises, public cloud (AWS/Azure/GCP), or a hybrid setup?","Original Technical Question":"What is the AI deployment model (on-premises, cloud, hybrid)?","Why We Ask This":"Deployment location determines the applicable security controls, shared responsibility model, and testing access constraints.","Priority":"High","Source":"Session 3"},{"Category":"Deployment Environments & Access","Question":"What environments exist — for example Development, Staging, and Production — and how are they separated from each other?","Original Technical Question":"What environments exist (Dev/Staging/Prod) and how is environment separation enforced?","Why We Ask This":"Environment separation prevents test activities from impacting live users and ensures findings are representative.","Priority":"High","Source":"Session 3"},{"Category":"Deployment Environments & Access","Question":"How would a security tester realistically access the AI system during testing — what credentials, VPN, or environment access is needed?","Original Technical Question":"What access (credentials, VPN, environment) is required for security testing?","Why We Ask This":"Practical access details allow us to plan the testing engagement and identify any access provisioning lead time.","Priority":"High","Source":"Session 3"},{"Category":"Deployment Environments & Access","Question":"How are identity and access controls enforced across the AI platform — for example role-based access, MFA, just-in-time access?","Original Technical Question":"What IAM controls are enforced on the AI platform (RBAC, MFA, JIT access)?","Why We Ask This":"Weak access controls are one of the most common root causes of AI platform compromises.","Priority":"High","Source":"Session 3"},{"Category":"Deployment Environments & Access","Question":"Is the AI infrastructure hardened — for example container security, least-privilege configurations, network policies, IP restrictions?","Original Technical Question":"Is AI infrastructure hardened (containers, least-privilege, network policies, IP restrictions)?","Why We Ask This":"Infrastructure hardening reduces the attack surface that an attacker would exploit after gaining initial access.","Priority":"High","Source":"Session 3"},{"Category":"Deployment Environments & Access","Question":"Are there runbooks for infrastructure hardening and incident recovery for the AI platform?","Original Technical Question":"Are runbooks available for AI platform hardening and incident recovery?","Why We Ask This":"Runbooks ensure teams can respond quickly and consistently when a security incident occurs.","Priority":"Medium","Source":"Session 3"}],"DevSecOps & MLOps Practices":[{"Category":"DevSecOps & MLOps Practices","Question":"How is security integrated into the AI development pipeline — is there a DevSecOps or shift-left security practice in place?","Original Technical Question":"Is a DevSecOps/shift-left security practice integrated into the AI development pipeline?","Why We Ask This":"Security must be built in from the start, not bolted on at the end. This question tells us how mature the practice is.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"Is AI security testing automated and integrated into the CI/CD pipeline — so every code or model change is automatically tested?","Original Technical Question":"Is AI security testing automated and integrated into the CI/CD pipeline?","Why We Ask This":"Automated testing in CI/CD catches regressions immediately rather than waiting for manual test cycles.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"How is model versioning managed — and is there an approval or validation gate before a new model version goes to production?","Original Technical Question":"How is model versioning controlled, and is there a production gate validation process?","Why We Ask This":"Without version control and release gates, a bad model update can silently change AI behaviour in unexpected ways.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"How are secrets, API keys, and credentials managed in the AI pipeline — are they stored in a secrets manager or hardcoded?","Original Technical Question":"How are secrets and credentials managed in the AI pipeline (secrets manager vs hardcoded)?","Why We Ask This":"Hardcoded secrets in AI pipelines are a common and serious vulnerability that can expose entire backend systems.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"How is access to the ML platform, model training infrastructure, and model weights controlled — who can make changes?","Original Technical Question":"Who has access to the ML platform, training infrastructure, and model weights?","Why We Ask This":"Unrestricted access to training infrastructure allows an insider or attacker to poison models or steal weights.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"Are software dependencies and libraries used in the AI stack regularly scanned for known vulnerabilities?","Original Technical Question":"Are AI stack dependencies scanned for known CVEs?","Why We Ask This":"Vulnerable dependencies are one of the most common entry points into AI systems and pipelines.","Priority":"High","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"Is there an AI Software Bill of Materials (AI-SBOM) — a complete list of all models, datasets, and libraries used?","Original Technical Question":"Is an AI-SBOM maintained covering all models, datasets, and libraries?","Why We Ask This":"An AI-SBOM is essential for tracking vulnerabilities, managing supply chain risk, and meeting emerging compliance requirements.","Priority":"Medium","Source":"Session 2"},{"Category":"DevSecOps & MLOps Practices","Question":"How are model integrity checks done — for example hash verification of model weights to detect tampering?","Original Technical Question":"Are model weight integrity checks implemented (hash verification)?","Why We Ask This":"Tampered model weights can silently change AI behaviour. Hash verification confirms the model has not been modified.","Priority":"Medium","Source":"Session 2"}],"Governance & Risk":[{"Category":"Governance & Risk","Question":"What would it cost us — financially and reputationally — if sensitive data was leaked through the AI?","Original Technical Question":"What is the business impact of AI data leakage?","Why We Ask This":"Quantifying business impact helps prioritize investments in AI security controls.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"What are the potential fines, legal, or regulatory consequences if our AI system is compromised or misused?","Original Technical Question":"What financial or regulatory risks are identified?","Why We Ask This":"AI systems can trigger fines, lawsuits, and regulatory action if controls are inadequate.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Do we have a written policy defining what the AI can and cannot be used for?","Original Technical Question":"Are acceptable use boundaries defined?","Why We Ask This":"Clear use-case boundaries prevent the AI from being used for purposes it was not designed or approved for.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Can we look up the full history of what any specific user has done with the AI system?","Original Technical Question":"Is user activity auditable?","Why We Ask This":"Audit trails allow you to reconstruct what any user did with the AI system, supporting investigations and compliance.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Do we have stricter rules and approval processes for AI use cases that carry higher risk?","Original Technical Question":"Is governance defined for high-risk AI use cases?","Why We Ask This":"High-risk use cases (medical, legal, financial) need extra oversight and controls beyond the standard baseline.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"What identifier connects this AI project to related security assessments, approvals, and audits?","Original Technical Question":"What form of ID enables association of this project with other risk/design assessments (e.g., third-party, security, or legal risk assessments), approvals, testing activities, product integrations, or reporting?","Why We Ask This":"A unique project ID links this AI system to all related assessments, making cross-referencing and reporting easier.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Is there documentation describing what type of AI is used (e.g., chatbot, classifier) and how it is configured?","Original Technical Question":"How are methods defined (e.g., classifier/generative/recommender), and settings documented?","Why We Ask This":"Knowing the AI method type helps apply the right risk framework and controls for that technology.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Who is responsible for regularly reviewing the AI system to make sure it stays safe and compliant?","Original Technical Question":"Describe any monitoring and periodic review planned, and the roles for those activities (include any inventory/review of existing/derivative use cases).","Why We Ask This":"Ongoing monitoring and periodic reviews ensure AI systems remain safe and compliant over time.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Does the AI system behave differently depending on whether the user is an internal employee or an external customer?","Original Technical Question":"With regard to model safety and output controls, how are different end user-types determined and enforced (e.g., public, internal, etc.)?","Why We Ask This":"Different user types (public vs. internal) should receive different levels of AI access and output filtering.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Is there a document that clearly defines what the AI is designed to do and what data it is allowed to use?","Original Technical Question":"How is the targeted application scope specified and documented, including scope and data re-use boundaries?","Why We Ask This":"Scope documentation prevents AI systems from being used beyond their intended and approved boundaries.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Can you walk us through how the AI application works from start to finish — who uses it, what it does, and what it connects to?","Original Technical Question":"Describe what the application does, end-to-end (e.g., users, workflows, integrations, etc.).","Why We Ask This":"A full end-to-end description helps identify all components, data flows, and integration points that need security review.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Do we have formal contracts with all vendors, and have we assessed the security risk each vendor brings?","Original Technical Question":"Do enterprise vendor agreements exist, and has a TPRM review been conducted for any vendors supplying use case components?","Why We Ask This":"Third-party risk management (TPRM) reviews ensure vendors meet security and compliance requirements.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Is there a process where a human regularly checks the AI's outputs for accuracy, fairness, and safety?","Original Technical Question":"Is there a 'human in the loop' to ensure output data correctness/bias on an ongoing basis?","Why We Ask This":"Humans reviewing AI outputs catch errors, bias, and harmful content that automated systems miss.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Can the AI modify or write data back to any of our databases or systems?","Original Technical Question":"Does the AI solution write back to any data sources (increment/overwrite)?","Why We Ask This":"AI systems that can write to databases or files can cause data corruption or unauthorized data modification.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Do the access permissions from our original data systems also apply when that data is used by the AI?","Original Technical Question":"Are permissions from the source mapped to the use case (e.g., guardrails to filter user queries based on access level, preservation of opt-out, read/write, etc.)?","Why We Ask This":"Permissions must flow through from source data systems to the AI layer to prevent unauthorized access.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Does the AI system limit itself to using only the data it actually needs, rather than collecting everything?","Original Technical Question":"Does the AI solution allow for data minimization?","Why We Ask This":"Data minimization means only collecting and using the data that is strictly necessary, reducing privacy risk.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"Are there any extra encryption or data protection measures beyond the basics?","Original Technical Question":"Are there any other encryption or data protection mechanisms?","Why We Ask This":"Beyond standard controls, additional encryption layers can protect sensitive AI data at rest and in transit.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"What network rules limit which systems the AI can connect to and communicate with?","Original Technical Question":"What network/API restrictions are in place?","Why We Ask This":"Network-level restrictions limit the blast radius of a compromise by controlling what the AI can reach.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"How do we stop harmful, biased, or unverified content from being fed into the AI system?","Original Technical Question":"What controls prevent ingesting biased, toxic, or unverified content (e.g., source allowlists, validation, filtering)?","Why We Ask This":"Bad input data produces bad AI outputs. Controls on ingestion prevent toxic or biased content from training or influencing the AI.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"What measures reduce the risk of the AI making up incorrect information and presenting it as fact?","Original Technical Question":"What controls are in place to prevent hallucinations?","Why We Ask This":"Hallucinations — where the AI confidently states false information — can cause significant harm in business contexts.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Governance & Risk","Question":"How do we make sure the AI's output is safely formatted and cannot trigger code injection or other attacks?","Original Technical Question":"What secure output handling specifics (encoding/parameterized queries/CSP) or system-prompt leakage controls are used?","Why We Ask This":"Output encoding prevents injection attacks when AI responses are rendered in web pages or passed to other systems.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Incident Response & Resilience":[{"Category":"Incident Response & Resilience","Question":"If the AI system is compromised, how quickly can we shut it down and what are the steps to fix the root cause?","Original Technical Question":"What procedures are in place to quickly isolate or shut down the AI application in the event of a security incident, steps to eliminate the root cause of an incident?","Why We Ask This":"Fast isolation limits damage during an incident. Clear steps ensure teams know exactly what to do.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Incident Response & Resilience","Question":"Do we have documented playbooks for securing and recovering all parts of the AI infrastructure during an incident?","Original Technical Question":"Describe where runbooks for infrastructure hardening underlying the model, agents, crawlers, and plug-ins (e.g., least privilege, IP restrictions) and recovery controls are used for incident management.","Why We Ask This":"Runbooks provide step-by-step guidance for securing and recovering AI infrastructure during an incident.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Incident Response & Resilience","Question":"After an AI security incident, what is our process for finding and permanently fixing the underlying cause?","Original Technical Question":"What steps will be taken to eliminate the root cause of an incident?","Why We Ask This":"Root cause elimination prevents the same incident from recurring. It requires a structured post-incident process.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Integration Points & Enterprise Connections":[{"Category":"Integration Points & Enterprise Connections","Question":"What enterprise systems does the AI connect to — for example databases, ERPs, CRMs, email, SharePoint, or internal APIs?","Original Technical Question":"What enterprise systems does the AI integrate with (DB, ERP, CRM, email, internal APIs)?","Why We Ask This":"Every integration point is a potential attack path. We need the full picture to assess the blast radius of a compromise.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"Does the AI system have access to sensitive internal data — such as customer records, financial data, HR data, or intellectual property?","Original Technical Question":"Does the AI have access to sensitive internal data (customer, financial, HR, IP)?","Why We Ask This":"Sensitive data access directly determines the severity of a security failure and the controls needed to protect it.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"Can the AI write data back to any system — for example update records, send emails, execute transactions, or trigger workflows?","Original Technical Question":"Can the AI perform write-back operations (update records, send emails, trigger transactions)?","Why We Ask This":"Write-back capability dramatically increases risk because a compromised AI can corrupt data or trigger unauthorised actions.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"How does the AI authenticate with internal systems — for example service accounts, OAuth tokens, or API keys — and how are those credentials managed?","Original Technical Question":"How does the AI authenticate to internal systems, and how are credentials managed?","Why We Ask This":"Stolen or over-privileged credentials used by the AI can become a pivot point for attackers to reach backend systems.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"Are there any third-party or cloud AI services used — such as OpenAI API, Azure OpenAI, AWS Bedrock — and what data is sent to them?","Original Technical Question":"What third-party AI services are used (OpenAI, Azure OpenAI, Bedrock), and what data is transmitted?","Why We Ask This":"Data sent to external AI providers may be stored, logged, or used for training. This is a key privacy and compliance concern.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"Are there plug-ins, extensions, or tool-calling capabilities enabled for the AI — and who controls what tools are available?","Original Technical Question":"Are plug-ins or tool-calling capabilities enabled, and who governs tool availability?","Why We Ask This":"Each plug-in or tool the AI can call is an additional attack surface and potential privilege escalation path.","Priority":"High","Source":"Session 2"},{"Category":"Integration Points & Enterprise Connections","Question":"Is there network segmentation between the AI layer and sensitive backend systems — or does the AI have broad internal network access?","Original Technical Question":"Is network segmentation enforced between the AI layer and sensitive backend systems?","Why We Ask This":"Network segmentation limits the damage an attacker can do if they compromise the AI system.","Priority":"Medium","Source":"Session 2"}],"Logging & Monitoring":[{"Category":"Logging & Monitoring","Question":"Are all AI system logs collected in one central place for easy review and alerting?","Original Technical Question":"Is centralized logging implemented?","Why We Ask This":"Centralized logs make it easy to search, correlate, and alert on events across all AI components.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Logging & Monitoring","Question":"Do we get automatic notifications when the AI system detects suspicious or high-risk activity?","Original Technical Question":"Are alerts configured for high-risk behavior?","Why We Ask This":"Alerts ensure that security teams are notified in real time when dangerous patterns are detected.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Logging & Monitoring","Question":"Does the system automatically flag unusual usage patterns that might indicate misuse?","Original Technical Question":"Is anomaly detection implemented for abuse?","Why We Ask This":"Automated anomaly detection catches unusual patterns faster than manual review.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Logging & Monitoring","Question":"Is there an automated system watching AI interactions 24/7 for signs of misuse?","Original Technical Question":"Is automated misuse monitoring enabled?","Why We Ask This":"Automated monitoring provides continuous surveillance without requiring human review of every interaction.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Logging & Monitoring","Question":"Do we have written documentation of all the points where access is controlled and data is tracked?","Original Technical Question":"Are system boundaries and control points for access, lineage, and governance enforcement documented?","Why We Ask This":"Without documentation, it is hard to enforce or audit where data flows and who has access.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Logging & Monitoring","Question":"Can you walk through how we detect abuse, what triggers alerts, and how logs can be exported for investigation?","Original Technical Question":"Please identify and explain the abuse detection, alerting, anomaly detection, and log export capabilities.","Why We Ask This":"Understanding the full monitoring stack helps identify gaps and ensures incidents can be investigated.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Logging, Observability & Findings Tracking":[{"Category":"Logging, Observability & Findings Tracking","Question":"What logging and monitoring is in place for the AI system — what events are captured and where are logs stored?","Original Technical Question":"What events are captured in AI system logs and where are they stored?","Why We Ask This":"Comprehensive logging is the foundation for detecting attacks, investigating incidents, and demonstrating compliance.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"Are AI-specific events logged — such as prompts, responses, tool calls, retrieval queries, and model errors?","Original Technical Question":"Are AI-specific events logged (prompts, responses, tool calls, retrieval queries, errors)?","Why We Ask This":"Standard application logs often miss AI-specific events. Without them, attacks like prompt injection leave no trace.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"How long are AI system logs retained — and who has access to them?","Original Technical Question":"What is the AI log retention period and who has access?","Why We Ask This":"Short retention periods can prevent forensic investigation of incidents. Broad log access increases the risk of data leakage.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"Are logs sanitised to remove sensitive data — such as PII, API keys, or confidential prompt content — before storage?","Original Technical Question":"Are AI logs sanitised to remove PII, API keys, and sensitive prompt content?","Why We Ask This":"Logs that store raw prompts can inadvertently become a repository of sensitive user data.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"Are there real-time alerts for high-risk AI behaviours — such as prompt injection attempts, data exfiltration patterns, or cost anomalies?","Original Technical Question":"Are real-time alerts configured for high-risk AI events (prompt injection, exfiltration, cost spikes)?","Why We Ask This":"Real-time alerting is the difference between detecting an attack in minutes versus discovering it weeks later.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"How will security testing findings be tracked and how will we know when they have been fixed?","Original Technical Question":"What is the findings tracking and remediation verification process?","Why We Ask This":"A clear tracking and verification process ensures findings do not get lost and remediation can be confirmed.","Priority":"High","Source":"Session 3"},{"Category":"Logging, Observability & Findings Tracking","Question":"Is centralised logging implemented across all AI components — model endpoints, RAG pipeline, tool calls, and infrastructure?","Original Technical Question":"Is centralised logging implemented across all AI components (endpoints, RAG, tools, infra)?","Why We Ask This":"Siloed logs make it impossible to correlate events across components and detect multi-stage attacks.","Priority":"Medium","Source":"Session 3"}],"Model & Data Pipelines (MLOps)":[{"Category":"Model & Data Pipelines (MLOps)","Question":"How does training data get ingested, validated, and cleaned before it is used to train or fine-tune the AI model?","Original Technical Question":"What is the training data ingestion, validation, and cleaning process?","Why We Ask This":"Poisoned or low-quality training data can corrupt model behaviour in ways that are very difficult to detect after the fact.","Priority":"High","Source":"Session 3"},{"Category":"Model & Data Pipelines (MLOps)","Question":"Are data pipelines validated and monitored for unauthorised changes or injections — for example malicious content added to the training corpus?","Original Technical Question":"Are data pipelines monitored for unauthorised modifications or malicious injections?","Why We Ask This":"Pipeline manipulation is a key attack vector. An attacker who can modify training data can control model behaviour.","Priority":"High","Source":"Session 3"},{"Category":"Model & Data Pipelines (MLOps)","Question":"How are model endpoints exposed — via REST API, gRPC, or SDK — and how is access to those endpoints authenticated and authorised?","Original Technical Question":"How are model endpoints exposed (REST/gRPC/SDK) and what authentication is enforced?","Why We Ask This":"Exposed model endpoints are direct targets for abuse. Authentication and authorisation are the first line of defence.","Priority":"High","Source":"Session 3"},{"Category":"Model & Data Pipelines (MLOps)","Question":"How is the model lifecycle managed — from training and evaluation through to deployment, monitoring, and retirement?","Original Technical Question":"How is the model lifecycle managed (training to evaluation to deployment to retirement)?","Why We Ask This":"A well-defined lifecycle ensures models are validated before deployment and retired before they become security liabilities.","Priority":"High","Source":"Session 3"},{"Category":"Model & Data Pipelines (MLOps)","Question":"Are there data flow diagrams showing how data moves through the ML pipeline — from raw input through to model output?","Original Technical Question":"Are ML pipeline data flow diagrams available (raw input to model output)?","Why We Ask This":"Data flow diagrams are essential for identifying where sensitive data is processed and where controls need to be applied.","Priority":"High","Source":"Session 3"},{"Category":"Model & Data Pipelines (MLOps)","Question":"Are MLOps workflows — such as Kubeflow, MLflow, or SageMaker Pipelines — secured and access-controlled?","Original Technical Question":"Are MLOps workflow platforms (Kubeflow, MLflow, SageMaker) secured and access-controlled?","Why We Ask This":"MLOps platforms control model training and deployment. Compromising them gives an attacker full control over the AI system.","Priority":"Medium","Source":"Session 3"}],"Prompt Injection & Anomaly Detection":[{"Category":"Prompt Injection & Anomaly Detection","Question":"Do we record when someone tries to manipulate the AI by hiding instructions in their messages?","Original Technical Question":"Are prompt injection attempts logged?","Why We Ask This":"Prompt injection is a top attack vector for AI systems. Logging attempts builds a threat intelligence baseline.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Prompt Injection & Anomaly Detection","Question":"Does the system recognize and flag conversations that follow suspicious or unusual patterns?","Original Technical Question":"Are anomalous conversation patterns detected?","Why We Ask This":"Unusual conversation flows can indicate attacks, automation abuse, or policy violations.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Prompt Injection & Anomaly Detection","Question":"Do we detect and flag when someone appears to be trying to misuse an AI tool in an unauthorized way?","Original Technical Question":"Are tool misuse attempts flagged?","Why We Ask This":"Users may try to abuse AI tools to perform unauthorized actions. Flagging these attempts enables rapid response.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Prompt Injection & Anomaly Detection","Question":"Do we monitor for unusual or suspicious document retrieval activity from the AI's knowledge base?","Original Technical Question":"Are RAG retrieval anomalies monitored?","Why We Ask This":"Unusual retrieval patterns can indicate an attacker probing the knowledge base or attempting data exfiltration.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Prompt Injection & Anomaly Detection","Question":"Do we prevent the AI's internal instructions (system prompt) from being revealed to end users?","Original Technical Question":"Are system prompt leakage protections implemented (no secrets in prompts, external guardrails, etc.)?","Why We Ask This":"System prompts often contain confidential instructions. Leaking them enables attackers to craft targeted bypasses.","Priority":"Medium","Source":"AI Security Questionnaire"}],"RAG / Document Retrieval":[{"Category":"RAG / Document Retrieval","Question":"Does the system check user permissions before pulling documents for the AI?","Original Technical Question":"How is access control enforced during document retrieval?","Why We Ask This":"The AI should only fetch documents a user is allowed to see. Without this, sensitive files could be exposed.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Does the AI treat fetched documents as potentially dangerous until verified?","Original Technical Question":"Are retrieved documents treated as untrusted input?","Why We Ask This":"Documents from external sources can contain malicious instructions. The AI should not blindly trust them.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Are filters applied so users only get search results they are allowed to access?","Original Technical Question":"Is metadata filtering enforced in vector search?","Why We Ask This":"Without metadata filters, users might retrieve documents from other tenants or restricted categories.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"How do we stop one customer's data from showing up in another customer's AI results?","Original Technical Question":"How do you prevent cross-tenant retrieval?","Why We Ask This":"In multi-tenant systems, one customer's data must never appear in another's results — this is a data isolation requirement.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Do we check documents for safety and quality before adding them to the AI's knowledge base?","Original Technical Question":"How is data ingestion validated before embedding?","Why We Ask This":"Poisoned or malicious content fed into the knowledge base can corrupt AI responses. Validation catches this early.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Do we detect if someone tries to corrupt the AI's memory by injecting bad data?","Original Technical Question":"Is embedding poisoning monitored?","Why We Ask This":"Attackers can inject manipulated data to skew AI behavior. Monitoring detects this kind of data-layer attack.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Can we look back and see exactly what documents the AI pulled for any given query?","Original Technical Question":"Are retrieval logs auditable?","Why We Ask This":"Audit logs let security teams trace what information the AI retrieved and when, useful for investigations.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Where is the AI's search database stored and who can access it?","Original Technical Question":"Where is the vector store placed and what controls exist?","Why We Ask This":"The vector database holds sensitive embeddings. Its location and access controls determine the blast radius of a breach.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"What information sources does the AI learn from, and does any of it contain sensitive data?","Original Technical Question":"What data sources are used and what type of data will be embedded or crawled?","Why We Ask This":"Knowing the data sources helps identify privacy risks, licensing issues, and potential for sensitive data leakage.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"RAG / Document Retrieval","Question":"Can we track exactly where each piece of data in the AI's knowledge base came from?","Original Technical Question":"How is data provenance established (data lineage and legitimacy tracking)?","Why We Ask This":"Tracing where data came from ensures accountability and helps remove compromised data quickly.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Rate Limiting & Cost Controls":[{"Category":"Rate Limiting & Cost Controls","Question":"Is there a cap on how many words or tokens each user can send to the AI per session?","Original Technical Question":"Are token usage limits enforced per user/session?","Why We Ask This":"Unlimited token usage can result in massive costs and resource exhaustion attacks.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Rate Limiting & Cost Controls","Question":"What are the exact limits on how often users can call the AI, and are they strict enough?","Original Technical Question":"What rate limits are configured?","Why We Ask This":"Specific rate limit values help evaluate whether they are tight enough to prevent abuse.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Rate Limiting & Cost Controls","Question":"Is there an absolute maximum number of tokens any request or session can use?","Original Technical Question":"Are token ceilings enforced?","Why We Ask This":"Token ceilings are a hard stop on cost overruns and Denial-of-Service via large inputs.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Rate Limiting & Cost Controls","Question":"Do we get alerts when AI usage costs suddenly spike beyond normal levels?","Original Technical Question":"Is cost anomaly monitoring implemented?","Why We Ask This":"Unusual spikes in API costs can indicate abuse, misuse, or a runaway process.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Rate Limiting & Cost Controls","Question":"Do we prevent the AI from getting into loops where it keeps generating output endlessly?","Original Technical Question":"Are recursive generation loops mitigated?","Why We Ask This":"An AI agent can get stuck in a loop generating content indefinitely, causing cost and performance issues.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Rate Limiting & Cost Controls","Question":"Is the AI system protected against attacks that try to overload it with too many requests?","Original Technical Question":"Is DoS protection implemented for LLM workloads?","Why We Ask This":"AI inference is compute-heavy. Without DoS protection, a small number of requests can overwhelm the system.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Red Team & Pen Testing Methodology":[{"Category":"Red Team & Pen Testing Methodology","Question":"Has the LLM/AI system ever been red-teamed? If yes, who did it and what was covered?","Original Technical Question":"Has prior LLM red teaming been conducted, and what was the scope?","Why We Ask This":"Red teaming simulates real attackers. Knowing if it has been done — and by whom — establishes the baseline for our work.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"Which AI-specific attack techniques are currently part of your penetration testing process (e.g., prompt injection, jailbreaking, data poisoning, model inversion)?","Original Technical Question":"Which AI-specific attack vectors are in scope (prompt injection, jailbreak, poisoning, inversion)?","Why We Ask This":"AI systems have unique attack vectors beyond traditional software. We need to confirm these are being tested deliberately.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"How are jailbreak and prompt injection attacks specifically tested today?","Original Technical Question":"How are jailbreak and prompt injection attacks tested?","Why We Ask This":"These are the #1 attack vectors against LLM systems and require structured, deliberate testing — not just ad-hoc checks.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"Is adversarial ML testing in scope — for example model evasion, model stealing, or membership inference attacks?","Original Technical Question":"Is adversarial ML testing in scope (evasion, model stealing, membership inference)?","Why We Ask This":"Advanced attackers use ML-specific techniques that traditional pen testing completely misses.","Priority":"Medium","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"Are multi-turn conversation attacks tested — where an attacker manipulates the AI gradually across several messages?","Original Technical Question":"Are multi-turn/contextual conversation attacks tested?","Why We Ask This":"Many real-world attacks unfold over multiple turns. Single-message tests alone miss this entire attack category.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"Is RAG-specific security tested — such as retrieval poisoning, cross-tenant document leakage, or metadata bypass?","Original Technical Question":"Is RAG-specific attack testing in scope (retrieval poisoning, cross-tenant leakage, metadata bypass)?","Why We Ask This":"RAG pipelines introduce unique attack surfaces that standard application pen testing does not cover.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"How do security test findings feed back into the development team — is there a formal vulnerability management process for AI findings?","Original Technical Question":"Is there a formal AI-specific vulnerability management and feedback loop?","Why We Ask This":"A closed loop between testing and development ensures vulnerabilities are fixed, not just documented and forgotten.","Priority":"High","Source":"Session 1"},{"Category":"Red Team & Pen Testing Methodology","Question":"Are regression tests kept for previously discovered jailbreaks or prompt injection attacks so they do not come back?","Original Technical Question":"Are regression tests maintained for previously discovered AI vulnerabilities?","Why We Ask This":"Without regression tests, the same attack can reappear after any model update or system change.","Priority":"Medium","Source":"Session 1"}],"Risk Frameworks & Compliance":[{"Category":"Risk Frameworks & Compliance","Question":"Which AI risk framework does the organisation follow — NIST AI RMF, ISO 42001, EU AI Act, or an internal framework?","Original Technical Question":"Which AI risk framework is adopted (NIST AI RMF, ISO 42001, EU AI Act)?","Why We Ask This":"The framework in use tells us the maturity and structure of the AI risk management program and what controls are expected.","Priority":"High","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"Is the AI system in scope for SOC 2, and if so which Trust Service Criteria apply (Security, Availability, Confidentiality, Privacy)?","Original Technical Question":"Is the AI system in scope for SOC 2, and which Trust Service Criteria apply?","Why We Ask This":"SOC 2 scope defines which controls must be in place and audited — this directly shapes what we need to test.","Priority":"High","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"Are there any specific regulatory obligations that apply to this AI system — such as GDPR, HIPAA, DPDP Act, or sector-specific rules?","Original Technical Question":"What regulatory obligations apply to the AI system (GDPR, HIPAA, DPDP, sector rules)?","Why We Ask This":"Regulations impose mandatory controls. Knowing them upfront prevents compliance gaps from being discovered late.","Priority":"High","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"Is there an internal AI security policy or standard — and does it include LLM-specific controls?","Original Technical Question":"Is there an internal AI security policy with LLM-specific controls?","Why We Ask This":"Internal policies define the minimum bar we are testing against. Without them, there is no agreed standard to measure.","Priority":"High","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"Has a formal AI risk assessment been completed for this system — and are the residual risks documented and accepted?","Original Technical Question":"Has a formal AI risk assessment been completed with documented residual risks?","Why We Ask This":"A risk assessment tells us what risks are already known and accepted versus what still needs to be evaluated.","Priority":"High","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"How are AI-specific risks reported to leadership or a risk committee — and how often?","Original Technical Question":"How and how often are AI-specific risks reported to leadership?","Why We Ask This":"Risk visibility at the leadership level is a key indicator of organisational security maturity.","Priority":"Medium","Source":"Session 1"},{"Category":"Risk Frameworks & Compliance","Question":"Are there any AI-specific standards or certifications the organisation is working towards (e.g., ISO 42001 certification)?","Original Technical Question":"Are AI-specific certifications (ISO 42001) being pursued?","Why We Ask This":"Certification goals shape which controls are prioritised and on what timeline — important context for our training plan.","Priority":"Medium","Source":"Session 1"}],"Scope of Training Content":[{"Category":"Scope of Training Content","Question":"Which LLM attack techniques must be covered — for example prompt injection, jailbreaking, training data poisoning, RAG pipeline attacks, guardrail bypass?","Original Technical Question":"Which LLM attack techniques are mandatory curriculum (prompt injection, jailbreak, poisoning, RAG attacks)?","Why We Ask This":"The client's must-have list drives the core curriculum. Everything else is built around these non-negotiables.","Priority":"High","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"Should training include hands-on attack exercises — where participants actually attempt to exploit a test LLM system — or is it theory-only?","Original Technical Question":"Should training include hands-on attack labs or is theoretical coverage sufficient?","Why We Ask This":"Hands-on exercises dramatically improve skill retention but require a safe lab environment and more preparation time.","Priority":"High","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"Should training cover defensive controls and detection — not just how attacks work, but how to prevent and detect them?","Original Technical Question":"Should defensive controls and detection be included alongside offensive techniques?","Why We Ask This":"Attack-only training creates awareness but not capability. Defensive coverage gives participants actionable skills.","Priority":"High","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"Are there specific AI frameworks, tools, or platforms used by ABC that training examples should be based on?","Original Technical Question":"Should training content be tailored to the client's specific AI stack and tools?","Why We Ask This":"Training built around the client's actual stack is far more applicable and immediately actionable than generic examples.","Priority":"High","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"What format works best for the team — live instructor-led sessions, recorded modules, written playbooks, or a combination?","Original Technical Question":"What training delivery format is preferred (instructor-led, recorded, playbooks, hybrid)?","Why We Ask This":"Format preference affects engagement and retention. The best content delivered in the wrong format will not land.","Priority":"Medium","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"How many hours of training are available — and should it be delivered in a single block or spread across multiple sessions?","Original Technical Question":"What is the total training duration and preferred session structure?","Why We Ask This":"Time constraints shape how much depth we can go into. Spreading sessions allows knowledge to consolidate between them.","Priority":"Medium","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"Should the training materials be left with ABC for ongoing internal use after the engagement ends?","Original Technical Question":"Are reusable/leave-behind training materials required post-engagement?","Why We Ask This":"Reusable materials extend the value of the engagement and support onboarding of new team members in the future.","Priority":"Medium","Source":"Session TR"},{"Category":"Scope of Training Content","Question":"Are there any topics that should NOT be covered — for example techniques considered too sensitive or out of scope for this team?","Original Technical Question":"Are any topics explicitly out-of-scope or prohibited for training content?","Why We Ask This":"Knowing what to exclude is as important as knowing what to include to avoid policy or legal issues during training.","Priority":"Low","Source":"Session TR"}],"Session & Guardrails":[{"Category":"Session & Guardrails","Question":"Do we track when users slowly try to manipulate the AI across multiple messages?","Original Technical Question":"Is multi-turn escalation monitored?","Why We Ask This":"Users can gradually push the AI into unsafe territory across a conversation. We need to check if the system catches this pattern.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Session & Guardrails","Question":"Do the AI's safety rules stay the same in every session for every user?","Original Technical Question":"Are guardrails enforced consistently across sessions?","Why We Ask This":"Safety rules must apply every time — not just in some sessions. Inconsistency creates exploitable gaps.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Session & Guardrails","Question":"What happens when the AI gets more text than it can handle at once?","Original Technical Question":"Is context window overflow mitigated?","Why We Ask This":"If too much text is fed into the AI, it may forget earlier safety instructions. We need to know if this risk is handled.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Session & Guardrails","Question":"Do we record when someone tries to bypass the AI's safety rules?","Original Technical Question":"Are jailbreak attempts logged?","Why We Ask This":"Users sometimes try to trick the AI into ignoring its rules. Logging these attempts helps detect and stop attackers.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Session & Guardrails","Question":"Is each user's conversation kept completely separate from others?","Original Technical Question":"Is session isolation enforced?","Why We Ask This":"One user's data should never leak into another user's session. This is a basic privacy and security control.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Supply Chain & Model Integrity":[{"Category":"Supply Chain & Model Integrity","Question":"Do we have a complete list of all software components and models used in our AI system?","Original Technical Question":"Is there an AI SBOM documented?","Why We Ask This":"A Software Bill of Materials for AI lists all components. It is essential for vulnerability tracking and compliance.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do we verify that the AI model files have not been tampered with using checksums or hashes?","Original Technical Question":"Are model weights integrity-verified (hashes)?","Why We Ask This":"Tampered model weights can silently alter AI behavior. Hash verification confirms the model has not been modified.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do we review and regularly audit all external APIs the AI system relies on?","Original Technical Question":"Are third-party APIs vetted and audited?","Why We Ask This":"Third-party APIs can introduce vulnerabilities, data leakage, or compliance violations if not reviewed.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do we get notified if the AI model we use is updated or changed by the model provider?","Original Technical Question":"Is monitoring in place for upstream model changes?","Why We Ask This":"Model providers can update models without notice, potentially changing AI behavior in unintended ways.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do we regularly scan all software libraries used by the AI system for known security vulnerabilities?","Original Technical Question":"Are dependencies scanned for vulnerabilities?","Why We Ask This":"Vulnerable libraries in the AI stack can be exploited just like in any other software system.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do our contracts with AI vendors explicitly state they cannot use our data to train their models?","Original Technical Question":"Do third-party agreements capture vendors' contractual commitments for 'no training', masking, or other restrictions?","Why We Ask This":"Vendor contracts must explicitly prohibit using your data for training or unauthorized processing.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Can we see a diagram showing how data moves through our AI system and all the third-party pieces involved?","Original Technical Question":"(Architecture/Data Flow Diagram): Show third-party components, connectors, extensions/plug-ins, and where integrity/patching controls apply.","Why We Ask This":"A data flow diagram makes it easy to see the full attack surface and identify where security controls are needed.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Do we track the origin and licenses of all AI components to ensure they are legitimate and compliant?","Original Technical Question":"Are SBOM/AI-BOM, license audits, or provenance/signing in place?","Why We Ask This":"Tracking licenses and provenance ensures legal compliance and that software comes from trusted sources.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"What is the underlying AI model (e.g., GPT-4, Claude, Llama) powering this solution?","Original Technical Question":"Which base model is being used by the AI solution?","Why We Ask This":"Knowing the base model determines the trust level, known vulnerabilities, and applicable controls.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"What data does this open-source AI component send outside our network, and who is responsible for each type?","Original Technical Question":"For open-source or custom components: what data (including metadata, telemetry, etc.) is transmitted off-network, and who controls each data type?","Why We Ask This":"Open-source components may send data externally. Understanding data flows is critical for privacy and security.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"If we use an open-source AI component, who provides support and security patches for it?","Original Technical Question":"For open-source or custom components: what kind of support for the model is available?","Why We Ask This":"Lack of support means security patches may not be available, leaving vulnerabilities unaddressed.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"When was this open-source AI component last updated, and how are security patches applied?","Original Technical Question":"For open-source or custom components: when was the last commit/release, and patching and vulnerability management process performed?","Why We Ask This":"Stale open-source projects may have known unpatched vulnerabilities.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Which specific version and distribution of this open-source component do we use, and who published it?","Original Technical Question":"For open-source or custom components: which package/distribution is used and who produced it?","Why We Ask This":"Using the wrong distribution or an unofficial fork introduces supply chain risk.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"Have we verified that this open-source AI model has not been secretly modified from the original?","Original Technical Question":"For open-source or custom components: has equivalence been validated (no modification/fine-tune introduced)? What delta/integrity checks confirm original vs packaged equivalence?","Why We Ask This":"Modified open-source models can introduce backdoors or biases without the user's knowledge.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Supply Chain & Model Integrity","Question":"If a supplier provides a fine-tuned AI model without a proper agreement, can we use a safer alternative instead, and is there an approval process?","Original Technical Question":"For any fine-tuned models from suppliers not governed by a supplier agreement, can requester be redirected to a lower risk model? Has sign off by appropriate authority been received?","Why We Ask This":"Fine-tuned models from ungoverned suppliers carry unknown risks. An escalation path and sign-off provides accountability.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Testing & QA":[{"Category":"Testing & QA","Question":"Is AI security testing automatically run every time we deploy new code?","Original Technical Question":"Is AI security testing integrated into CI/CD?","Why We Ask This":"Security tests must run automatically with every code change to catch regressions before deployment.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Testing & QA","Question":"Do we add newly discovered AI attack techniques to our ongoing test suite to prevent them from coming back?","Original Technical Question":"Are regression tests maintained for jailbreaks?","Why We Ask This":"As new jailbreaks are discovered, they should be added to the test suite to prevent future recurrence.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Testing & QA","Question":"Do we have a library of documented tests that simulate real attacks on the AI system?","Original Technical Question":"Are adversarial test cases documented?","Why We Ask This":"Documented adversarial tests can be reviewed, reused, and expanded systematically.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Testing & QA","Question":"Do we test the AI for attacks that happen across multiple messages in a conversation — not just single messages?","Original Technical Question":"Is multi-turn testing included?","Why We Ask This":"Many attacks unfold over multiple messages. Single-turn tests miss these attack patterns entirely.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Testing & QA","Question":"Do we have automated tests specifically designed to find security issues in the AI's document retrieval system?","Original Technical Question":"Are RAG-specific tests automated?","Why We Ask This":"RAG systems have unique attack surfaces (retrieval poisoning, cross-tenant leaks) that need dedicated automated tests.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Testing & QA","Question":"Does the AI provider conduct its own penetration testing, and can they share the results with us?","Original Technical Question":"What pen-test or red-team coverage is done by the provider?","Why We Ask This":"Provider-side testing validates the security of components we cannot directly test ourselves.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Tool & API Usage":[{"Category":"Tool & API Usage","Question":"What external actions or systems can the AI interact with (e.g., send email, query databases)?","Original Technical Question":"What tools can the model call?","Why We Ask This":"AI models with tool access can take real-world actions. Knowing the full list is the first step to controlling risk.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Does the system check if a user has permission before letting the AI use a specific tool on their behalf?","Original Technical Question":"How is tool authorization enforced per user role?","Why We Ask This":"Not every user should be able to trigger every tool. Role-based controls prevent privilege abuse.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Does the system verify that inputs to AI tools are in the correct format before executing them?","Original Technical Question":"Is strict schema validation applied to tool parameters?","Why We Ask This":"Attackers can craft malformed inputs to abuse tools. Schema validation ensures only well-formed data is accepted.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Do we keep a record of every action the AI takes through its tools?","Original Technical Question":"Are tool executions logged?","Why We Ask This":"Logs of tool calls allow forensic analysis and help detect misuse after the fact.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Is the AI able to call internal company APIs, and if so, which ones and with what limits?","Original Technical Question":"Can the model access internal APIs?","Why We Ask This":"Internal API access can expose backend systems. This needs to be scoped and controlled carefully.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Do we have safeguards to stop malicious inputs from tricking the AI into making unauthorized tool calls?","Original Technical Question":"Is tool-call forgery prevented?","Why We Ask This":"An attacker could craft a message that tricks the AI into calling a tool it shouldn't. Preventive controls are needed.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Are AI tools limited to only the access they absolutely need — nothing more?","Original Technical Question":"Are tool permissions based on least privilege?","Why We Ask This":"Tools should only have the minimum access needed. Over-privileged tools increase the damage from any misuse.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Is there a limit on how many times users or systems can call the AI API in a given time period?","Original Technical Question":"Are AI APIs rate-limited?","Why We Ask This":"Without rate limits, attackers can abuse the API at scale, causing costs and outages.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Do all AI system endpoints require users or systems to prove their identity before access?","Original Technical Question":"Is authentication required for all endpoints?","Why We Ask This":"Unauthenticated endpoints are an open door for unauthorized access. Every endpoint should require identity verification.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"Does the server check that the AI's responses match the expected format before sending them to the user?","Original Technical Question":"Are structured outputs validated server-side?","Why We Ask This":"The client cannot be trusted to validate AI outputs. Server-side validation prevents malformed data from propagating.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"How does the system prevent external content from hijacking the AI's instructions, and when does a human step in?","Original Technical Question":"What prompt-injection controls or human-in-the-loop triggers are used?","Why We Ask This":"Prompt injection can hijack AI actions. Controls and human checkpoints reduce the risk of the AI being manipulated.","Priority":"Medium","Source":"AI Security Questionnaire"},{"Category":"Tool & API Usage","Question":"What guardrails limit what an AI agent can do on its own, and where does it need human approval?","Original Technical Question":"Are agent controls used (e.g., avoid open-ended extensions, minimize permissions, execution in user context, user approval, complete mediation downstream)?","Why We Ask This":"Autonomous agents can take broad actions. Controls ensure they stay within intended boundaries.","Priority":"Medium","Source":"AI Security Questionnaire"}],"Training Objectives & Success Criteria":[{"Category":"Training Objectives & Success Criteria","Question":"What does a successful training outcome look like from ABC's leadership perspective — what skills or behaviours should participants have after training?","Original Technical Question":"What are the measurable success criteria for training outcomes?","Why We Ask This":"Without a clear definition of success, we cannot design a curriculum or measure whether the training achieved its goal.","Priority":"High","Source":"Session TR"},{"Category":"Training Objectives & Success Criteria","Question":"Where does ABC's security team feel most underprepared today when it comes to LLM/AI security?","Original Technical Question":"What are the identified skill gaps in LLM/AI security for the team?","Why We Ask This":"Knowing the biggest perceived gaps helps us prioritise the curriculum to address what matters most to the client.","Priority":"High","Source":"Session TR"},{"Category":"Training Objectives & Success Criteria","Question":"Are there specific LLM attack categories that leadership wants the team to be able to detect and respond to after training?","Original Technical Question":"Which LLM attack categories must the team be able to detect and respond to post-training?","Why We Ask This":"Leadership priorities shape what the team will be held accountable for — the training must align to those priorities.","Priority":"High","Source":"Session TR"},{"Category":"Training Objectives & Success Criteria","Question":"Are there any regulatory or policy-driven training requirements that must be covered — for example topics required for a compliance audit?","Original Technical Question":"Are there compliance-mandated training topics that must be covered?","Why We Ask This":"Compliance-driven requirements are non-negotiable and must be explicitly included in the curriculum.","Priority":"High","Source":"Session TR"},{"Category":"Training Objectives & Success Criteria","Question":"How will training effectiveness be measured — through assessments, practical exercises, or post-training capability benchmarks?","Original Technical Question":"How will training effectiveness be measured (assessments, exercises, benchmarks)?","Why We Ask This":"Measurement criteria allow us to demonstrate training value to leadership and identify participants who need follow-up.","Priority":"Medium","Source":"Session TR"}],"🛡️ LLM Pentest Walkthrough — Questions to Ask":[{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Can you walk me through what the LLM-based application does end-to-end — who uses it, what it processes, and what actions it can take?","Original Technical Question":"Describe the application's complete workflow: user inputs, processing pipeline, LLM role, outputs, and downstream effects.","Why We Ask This":"I need a mental model of the entire system before I can identify attack surfaces. The LLM is just one piece — the context around it (who sends input, what data it touches, what it can trigger) determines the real risk.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What is the system prompt, and can I see it — or at least understand what instructions and persona the model has been given?","Original Technical Question":"What is the content of the system prompt? Is it static or dynamically constructed? Does it include user-supplied data or external content?","Why We Ask This":"The system prompt is my first target. If it contains secrets, hardcoded credentials, or overly permissive instructions, that is immediately exploitable. I also need to know if user input or external data is being injected into it — that is a direct prompt injection vector.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What model is being used — provider, model name, and version — and is it accessed via a managed API or self-hosted?","Original Technical Question":"Which LLM provider and model version is in use (e.g., GPT-4o, Claude 3.5, Llama 3.1)? Is it API-based (OpenAI, Anthropic, Azure OpenAI) or self-hosted (Ollama, vLLM, HuggingFace)?","Why We Ask This":"Different models have different known jailbreaks, guardrail gaps, and behaviours. A self-hosted model may have no built-in safety filters. API-based models may have rate limits and content policies I need to understand before testing.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Is the model fine-tuned or used with the base weights? If fine-tuned — on what data, and by whom?","Original Technical Question":"Has the model been fine-tuned (RLHF, LoRA, full fine-tune)? On what dataset? Who performed the fine-tuning and how was it validated?","Why We Ask This":"Fine-tuned models can have unintended behaviours, weakened safety alignment, or training data that can be extracted. I need to test whether fine-tuning has removed safety guardrails or introduced backdoors.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Does the application use RAG (Retrieval-Augmented Generation)? If yes, what data sources feed into it and who can access which documents?","Original Technical Question":"Is RAG implemented? What is the vector database (Pinecone, Weaviate, pgvector)? What data is embedded — internal docs, customer data, code? Are document-level access controls enforced before retrieval?","Why We Ask This":"RAG is a major attack surface. I need to test whether I can retrieve documents I should not have access to, inject malicious content into the knowledge base, or manipulate retrieval to get sensitive data. The vector store is often an afterthought in security architecture.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What tools or functions can the LLM call — and what real-world actions can it trigger?","Original Technical Question":"What is the full list of tools/functions available to the model (function calling, tool use, plugins)? Can it execute code, query databases, send emails, call internal APIs, modify files, or trigger workflows?","Why We Ask This":"Tool calling is where LLM vulnerabilities become real-world impact. If the model can send emails, run SQL, or call internal APIs, then a successful prompt injection is no longer just about text — it can become a data breach, account takeover, or destructive action.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"How is user input passed to the model — and is any external content (web, documents, emails) also included in the prompt?","Original Technical Question":"What is the full prompt construction pipeline? Does user input get concatenated directly? Is external content (scraped web pages, uploaded files, email bodies, retrieved documents) inserted into the prompt without sanitisation?","Why We Ask This":"This is the prompt injection threat model question. If external content reaches the model, an attacker who controls that content controls the model. I need to know every untrusted data source that ends up in the LLM context window.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What are the guardrails — and are they applied before the model, after the model, or both?","Original Technical Question":"What input and output filtering is in place? Is there a moderation layer (e.g., OpenAI Moderation API, AWS Guardrails, custom classifier)? Are guardrails applied pre-LLM, post-LLM, or both? Can they be bypassed by rephrasing or encoding?","Why We Ask This":"I need to understand the guardrail architecture to plan my bypass attempts. Pre-LLM filters are usually easier to bypass than post-LLM checks. If guardrails only run on output, indirect prompt injection via tool results or retrieved documents may bypass them entirely.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"How does authentication work — who can access the LLM features and what are the different user privilege levels?","Original Technical Question":"What authentication and authorisation controls gate access to LLM features? Are there different user roles (anonymous, authenticated, admin)? Can users access the model directly via API or only through the UI? Are there separate system vs user trust levels?","Why We Ask This":"I need to understand the privilege model to test horizontal and vertical privilege escalation. I want to know if there is an admin role with expanded model permissions, if unauthenticated users can reach the model, and whether the model itself is treated as a trusted actor (it should not be).","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Is the LLM part of an agentic workflow — where it can plan, take multiple steps, or call other agents?","Original Technical Question":"Is the LLM used in an agentic framework (LangChain, AutoGPT, CrewAI, custom agent loop)? Can it spawn sub-agents, maintain memory across sessions, or take multi-step autonomous actions? What stops it from executing harmful action chains?","Why We Ask This":"Agentic systems dramatically increase attack surface. A single successful prompt injection in a multi-step agent can result in cascading actions. I need to test whether I can hijack the planning step, manipulate memory, or cause the agent to take actions the user never intended.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Where is conversation history stored, for how long, and who can access it?","Original Technical Question":"How is conversation history persisted (database, in-memory, vector store)? What is the retention period? Can users access each other's history? Can admins read all conversations? Is history included in future prompts — and is it sanitised before inclusion?","Why We Ask This":"Conversation history is a persistence and exfiltration target. If injected content gets stored in history and replayed into future prompts, that is a persistent prompt injection. I also want to know if I can access other users' history — that is an IDOR finding.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"How are API keys and credentials to the LLM provider managed — are they in environment variables, a secrets manager, or the codebase?","Original Technical Question":"Where are LLM provider API keys stored (hardcoded, .env files, AWS Secrets Manager, Azure Key Vault)? Who has access? Are they rotated? Is the same key shared across environments?","Why We Ask This":"LLM API keys are high-value targets. A leaked key means an attacker can abuse the quota, extract usage data, or run malicious queries billed to the victim. I will look for keys in source code, config files, logs, and error messages.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What does the application log — and do logs capture full prompts and model responses?","Original Technical Question":"What is logged: user input, full prompts, model outputs, tool call arguments, retrieved documents, errors? Where are logs stored and who can access them? Are logs sanitised before storage? Can I access logs as a test user?","Why We Ask This":"Logs are often the most sensitive artefact in an LLM deployment. Full prompt logging means every user query is stored — often including PII, credentials, and confidential data. I also check whether I can access logs I should not be able to, or whether error messages leak internal prompt details.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Is there a testing or staging environment I can test against — one that mirrors production as closely as possible?","Original Technical Question":"Is there a staging environment with the same model, same system prompt, same tools, and same guardrails as production? Are there any differences between staging and prod that would affect test validity?","Why We Ask This":"I need a realistic environment to test against. If staging has weaker guardrails, different tools, or a different model, my findings may not be representative of production risk. I want to confirm the test environment reflects reality.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Are there any known issues or previous security findings against this LLM system that I should be aware of?","Original Technical Question":"Have previous pen tests, bug bounty reports, internal security reviews, or incident reports identified issues in this LLM system? Are there known jailbreaks or misuse cases that have already been observed in production?","Why We Ask This":"Previous findings tell me where to focus first. If prompt injection was already found and supposedly fixed, I will test whether the fix actually held. Known production misuse also tells me what real attackers are already doing against this system.","Priority":"Medium","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Is multi-tenancy in scope — and if so, how is tenant data isolated at the model and retrieval layer?","Original Technical Question":"Is this a multi-tenant application? How is tenant isolation enforced in the vector store, conversation history, and tool execution context? Is the tenant identifier passed to the model and can it be manipulated by a user?","Why We Ask This":"Multi-tenant LLM applications are prone to cross-tenant data leakage. I will test whether I can retrieve another tenant's documents via the RAG pipeline, access their conversation history, or manipulate tenant context by injecting a different tenant ID.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"What happens when the model produces an error or an unexpected output — are raw error messages or stack traces exposed to the user?","Original Technical Question":"How are LLM errors handled (invalid responses, timeouts, refusals, malformed JSON from function calls)? Are raw error messages, stack traces, or internal prompt content surfaced to the user? Is error handling different in staging vs production?","Why We Ask This":"Error messages frequently leak sensitive internal details — internal prompt structure, backend API names, server configuration, or even partial system prompt content. I will deliberately trigger errors to see what gets surfaced.","Priority":"Medium","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Are there rate limits or token limits on the LLM API — and are they enforced per user or globally?","Original Technical Question":"What rate limits and token quotas are enforced? Are they per-user, per-session, per-IP, or global? What happens when limits are hit — is there a graceful failure or an exploitable error? Can I bypass per-user limits by creating multiple accounts?","Why We Ask This":"Weak rate limiting enables DoS via compute exhaustion and also facilitates brute-force jailbreak attempts at scale. I want to understand what controls exist and whether they can be bypassed by rotating identities or crafting high-token requests.","Priority":"Medium","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"How does the application handle uploaded files or URLs — is that content passed directly to the model?","Original Technical Question":"Can users upload files (PDF, DOCX, images) or provide URLs? How is that content extracted and passed to the model? Is there sanitisation or content scanning before embedding or prompt injection? Could a malicious file trigger indirect prompt injection?","Why We Ask This":"File uploads and URL processing are classic indirect prompt injection vectors. A malicious PDF with hidden instructions, or a webpage with injected text targeting the LLM, can hijack model behaviour. I need to test whether the application blindly trusts user-supplied external content.","Priority":"High","Source":"Pentest Walkthrough"},{"Category":"🛡️ LLM Pentest Walkthrough — Questions to Ask","Question":"Is the output from the LLM rendered in a web interface — and is it sanitised before rendering to prevent XSS?","Original Technical Question":"How is LLM output rendered in the UI (raw HTML, markdown, text)? Is output sanitised before rendering? Could an attacker cause the LLM to output HTML or JavaScript that gets executed in another user's browser?","Why We Ask This":"If LLM output is rendered as HTML without sanitisation, stored XSS is trivially achievable via prompt injection. I will test whether I can get the model to output payloads like script tags or javascript: URIs that get executed when another user views the response.","Priority":"High","Source":"Pentest Walkthrough"}]};
+// ═══════════════════════════════════════════════════════
+// CATEGORY ICONS & METADATA
+// ═══════════════════════════════════════════════════════
+const CAT_ICONS = {
+  "AI-Enabled Applications in Scope": "🤖",
+  "Audience & Learner Profiles": "👥",
+  "Build Priorities & Forward-Looking Coverage": "🔭",
+  "Constraints, Rules of Engagement & Guardrails": "⚖️",
+  "Current Testing Capabilities & Coverage": "🧪",
+  "Data Privacy & PII": "🔒",
+  "Deployment Environments & Access": "☁️",
+  "DevSecOps & MLOps Practices": "⚙️",
+  "Governance & Risk": "📊",
+  "Incident Response & Resilience": "🚨",
+  "Integration Points & Enterprise Connections": "🔗",
+  "Logging & Monitoring": "📡",
+  "Logging, Observability & Findings Tracking": "🔍",
+  "Model & Data Pipelines (MLOps)": "🔄",
+  "Prompt Injection & Anomaly Detection": "💉",
+  "RAG / Document Retrieval": "📚",
+  "Rate Limiting & Cost Controls": "⚡",
+  "Red Team & Pen Testing Methodology": "🎯",
+  "Risk Frameworks & Compliance": "📋",
+  "Scope of Training Content": "🎓",
+  "Session & Guardrails": "🛡️",
+  "Supply Chain & Model Integrity": "🔑",
+  "Testing & QA": "✅",
+  "Tool & API Usage": "🛠️",
+  "Training Objectives & Success Criteria": "🏆",
+  "🛡️ LLM Pentest Walkthrough — Questions to Ask": "🕵️"
+};
+
+// ═══════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════
+let state = {
+  activeCat: null,
+  filter: 'all',
+  search: '',
+  sortCol: null,
+  sortDir: 'asc',
+  expandedRows: new Set()
+};
+
+// ═══════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════
+function init() {
+  let total = 0, high = 0;
+  Object.values(DATA).forEach(qs => {
+    total += qs.length;
+    qs.forEach(q => { if (q.Priority === 'High') high++; });
+  });
+  document.getElementById('total-q').textContent = total;
+  document.getElementById('total-cats').textContent = Object.keys(DATA).length;
+  document.getElementById('high-count').textContent = high;
+  renderSidebar();
+}
+
+// ═══════════════════════════════════════════════════════
+// SIDEBAR
+// ═══════════════════════════════════════════════════════
+function renderSidebar() {
+  const list = document.getElementById('cat-list');
+  const cats = Object.keys(DATA);
+  const search = state.search.toLowerCase();
+
+  let html = '';
+  cats.forEach(cat => {
+    let qs = DATA[cat];
+    if (state.filter !== 'all') qs = qs.filter(q => q.Priority === state.filter);
+    if (search) {
+      const matchCat = cat.toLowerCase().includes(search);
+      const matchQ = qs.some(q => q.Question.toLowerCase().includes(search) || q['Why We Ask This'].toLowerCase().includes(search) || (q['Original Technical Question']||'').toLowerCase().includes(search));
+      if (!matchCat && !matchQ) return;
+      if (!matchCat) qs = qs.filter(q => q.Question.toLowerCase().includes(search) || q['Why We Ask This'].toLowerCase().includes(search) || (q['Original Technical Question']||'').toLowerCase().includes(search));
+    }
+    if (qs.length === 0) return;
+
+    const isActive = state.activeCat === cat;
+    html += `<div class="cat-item ${isActive ? 'active' : ''}" onclick="selectCat('${cat.replace(/'/g, "\\'")}')">
+      <span class="cat-icon">${CAT_ICONS[cat] || '📌'}</span>
+      <span class="cat-name">${cat}</span>
+      <span class="cat-count">${qs.length}</span>
+    </div>`;
+  });
+
+  list.innerHTML = html || '<div style="padding:1rem 1.25rem;font-size:0.8rem;color:var(--text3)">No categories match your search.</div>';
+}
+
+// ═══════════════════════════════════════════════════════
+// SELECT CATEGORY
+// ═══════════════════════════════════════════════════════
+function selectCat(cat) {
+  state.activeCat = cat;
+  state.expandedRows = new Set();
+  renderSidebar();
+  renderMain();
+}
+
+// ═══════════════════════════════════════════════════════
+// MAIN RENDER
+// ═══════════════════════════════════════════════════════
+function renderMain() {
+  if (!state.activeCat) return;
+  const cat = state.activeCat;
+  let qs = DATA[cat];
+
+  if (state.filter !== 'all') qs = qs.filter(q => q.Priority === state.filter);
+  if (state.search) {
+    const s = state.search.toLowerCase();
+    qs = qs.filter(q =>
+      q.Question.toLowerCase().includes(s) ||
+      q['Why We Ask This'].toLowerCase().includes(s) ||
+      (q['Original Technical Question'] || '').toLowerCase().includes(s)
+    );
+  }
+  if (state.sortCol) {
+    qs = [...qs].sort((a, b) => {
+      let av = a[state.sortCol] || '', bv = b[state.sortCol] || '';
+      if (state.sortCol === 'Priority') {
+        const order = { High: 0, Medium: 1, Low: 2 };
+        av = order[av] ?? 3; bv = order[bv] ?? 3;
+        return state.sortDir === 'asc' ? av - bv : bv - av;
+      }
+      return state.sortDir === 'asc' ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+  }
+
+  const allQs = DATA[cat];
+  const highCnt = allQs.filter(q => q.Priority === 'High').length;
+  const medCnt = allQs.filter(q => q.Priority === 'Medium').length;
+  const lowCnt = allQs.filter(q => q.Priority === 'Low').length;
+  const totalCnt = allQs.length;
+
+  let tableRows = '';
+  qs.forEach((q, i) => {
+    const isExpanded = state.expandedRows.has(i);
+    const origTq = q['Original Technical Question'] || '';
+    const pClass = q.Priority.toLowerCase();
+    const pDot = q.Priority === 'High' ? '🔴' : q.Priority === 'Medium' ? '🟡' : '🟢';
+
+    tableRows += `
+      <tr class="${isExpanded ? 'expanded' : ''}" onclick="toggleRow(${i})">
+        <td class="td-num">${i + 1}</td>
+        <td class="td-q">${escHtml(q.Question)}</td>
+        <td class="td-orig">${origTq ? escHtml(origTq) : '<span style="color:var(--text3);font-size:0.7rem;">—</span>'}</td>
+        <td class="td-why">${escHtml(q['Why We Ask This'])}</td>
+        <td class="td-prio"><span class="priority-badge ${pClass}">${pDot} ${q.Priority}</span></td>
+        <td class="td-expand"><em class="chevron">▶</em></td>
+      </tr>`;
+
+    if (isExpanded) {
+      tableRows += `
+        <tr class="detail-row">
+          <td colspan="6">
+            <div class="detail-inner">
+              <div class="detail-cell">
+                <div class="detail-label">📝 Full Question (Plain English)</div>
+                <div class="detail-value">${escHtml(q.Question)}
+                  <button class="copy-btn" onclick="copyText(event, '${escAttr(q.Question)}')">copy</button>
+                </div>
+              </div>
+              <div class="detail-cell">
+                <div class="detail-label">🔬 Original Technical Question</div>
+                <div class="detail-value mono">${origTq ? escHtml(origTq) : '<span style="color:var(--text3)">—</span>'}
+                  ${origTq ? `<button class="copy-btn" onclick="copyText(event, '${escAttr(origTq)}')">copy</button>` : ''}
+                </div>
+              </div>
+              <div class="detail-cell">
+                <div class="detail-label">💡 Why We Ask This</div>
+                <div class="detail-value">${escHtml(q['Why We Ask This'])}
+                  <button class="copy-btn" onclick="copyText(event, '${escAttr(q['Why We Ask This'])}')">copy</button>
+                </div>
+              </div>
+            </div>
+          </td>
+        </tr>`;
+    }
+  });
+
+  const thSort = (col, label) => {
+    const cls = state.sortCol === col ? (state.sortDir === 'asc' ? 'sort-asc' : 'sort-desc') : '';
+    return `<th class="${cls}" onclick="setSort('${col}')">${label}</th>`;
+  };
+
+  const main = document.getElementById('main-content');
+  main.innerHTML = `
+    <div class="cat-view">
+      <div class="cat-view-header">
+        <div class="cat-view-title-block">
+          <div class="cat-view-icon">${CAT_ICONS[cat] || '📌'}</div>
+          <div class="cat-view-title">${cat}</div>
+          <div class="cat-view-meta">
+            <span class="meta-badge">${allQs.length} questions</span>
+            ${highCnt > 0 ? `<span class="meta-badge" style="color:var(--high);border-color:rgba(255,77,106,0.3)">🔴 ${highCnt} High</span>` : ''}
+            ${medCnt > 0 ? `<span class="meta-badge" style="color:var(--medium);border-color:rgba(245,158,11,0.3)">🟡 ${medCnt} Medium</span>` : ''}
+            ${lowCnt > 0 ? `<span class="meta-badge" style="color:var(--low);border-color:rgba(34,197,94,0.3)">🟢 ${lowCnt} Low</span>` : ''}
+          </div>
+        </div>
+        <div class="cat-view-actions">
+          <button class="btn btn-secondary" onclick="copyAllQuestions()">📋 Copy All</button>
+          <button class="btn btn-primary" onclick="downloadCategory('${escAttr(cat)}')">⬇ Export .xlsx</button>
+        </div>
+      </div>
+
+      <div class="priority-summary">
+        <div class="prio-bar">
+          <div class="prio-label">High Priority <strong>${highCnt}/${totalCnt}</strong></div>
+          <div class="bar-track"><div class="bar-fill bar-high" style="width:${(highCnt/totalCnt*100).toFixed(0)}%"></div></div>
+        </div>
+        <div class="prio-bar">
+          <div class="prio-label">Medium Priority <strong>${medCnt}/${totalCnt}</strong></div>
+          <div class="bar-track"><div class="bar-fill bar-medium" style="width:${(medCnt/totalCnt*100).toFixed(0)}%"></div></div>
+        </div>
+        <div class="prio-bar">
+          <div class="prio-label">Low Priority <strong>${lowCnt}/${totalCnt}</strong></div>
+          <div class="bar-track"><div class="bar-fill bar-low" style="width:${(lowCnt/totalCnt*100).toFixed(0)}%"></div></div>
+        </div>
+      </div>
+
+      ${qs.length === 0 ? '<div class="empty-state"><span>🔍</span>No questions match the current filters.</div>' : `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:36px">#</th>
+              ${thSort('Question', 'Question (Plain English)')}
+              ${thSort('Original Technical Question', 'Technical Question')}
+              ${thSort('Why We Ask This', 'Why We Ask This')}
+              ${thSort('Priority', 'Priority')}
+              <th style="width:30px"></th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      `}
+
+      <div class="quick-ref">
+        <div class="quick-ref-title">⚡ Quick Jump — Other Categories</div>
+        <div class="quick-cards">
+          ${Object.keys(DATA).filter(c => c !== cat).slice(0, 8).map(c => `
+            <div class="quick-card" onclick="selectCat('${c.replace(/'/g,"\\'")}')">
+              <div class="qc-label">${CAT_ICONS[c] || '📌'} ${DATA[c].length} questions</div>
+              <div class="qc-value">${c}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════════
+function toggleRow(i) {
+  if (state.expandedRows.has(i)) state.expandedRows.delete(i);
+  else state.expandedRows.add(i);
+  renderMain();
+}
+
+function setSort(col) {
+  if (state.sortCol === col) {
+    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    state.sortCol = col;
+    state.sortDir = 'asc';
+  }
+  renderMain();
+}
+
+function setFilter(f, el) {
+  state.filter = f;
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderSidebar();
+  if (state.activeCat) renderMain();
+}
+
+function handleSearch(val) {
+  state.search = val;
+  state.expandedRows = new Set();
+  renderSidebar();
+  if (state.activeCat) renderMain();
+}
+
+// ═══════════════════════════════════════════════════════
+// COPY
+// ═══════════════════════════════════════════════════════
+function copyText(e, text) {
+  e.stopPropagation();
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = e.target;
+    btn.textContent = '✓';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'copy'; btn.classList.remove('copied'); }, 1500);
+  });
+}
+
+function copyAllQuestions() {
+  if (!state.activeCat) return;
+  let qs = DATA[state.activeCat];
+  if (state.filter !== 'all') qs = qs.filter(q => q.Priority === state.filter);
+  const text = qs.map((q, i) => {
+    let line = (i+1) + '. ' + q.Question;
+    if (q['Original Technical Question']) line += '\n   TECHNICAL: ' + q['Original Technical Question'];
+    line += '\n   WHY: ' + q['Why We Ask This'];
+    return line;
+  }).join('\n\n');
+  navigator.clipboard.writeText(text).then(() => showToast('✓ All questions copied to clipboard!'));
+}
+
+// ═══════════════════════════════════════════════════════
+// XLSX DOWNLOAD
+// ═══════════════════════════════════════════════════════
+function buildSheet(questions) {
+  const headers = ['Category', 'Question (Plain English)', 'Original Technical Question', 'Why We Ask This', 'Priority', 'Source'];
+  const rows = [headers, ...questions.map(q => [
+    q.Category,
+    q.Question,
+    q['Original Technical Question'] || '',
+    q['Why We Ask This'],
+    q.Priority,
+    q.Source || ''
+  ])];
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [
+    { wch: 32 }, { wch: 60 }, { wch: 50 }, { wch: 70 }, { wch: 10 }, { wch: 22 }
+  ];
+  return ws;
+}
+
+function downloadCategory(cat) {
+  try {
+    const qs = DATA[cat];
+    const wb = XLSX.utils.book_new();
+    const ws = buildSheet(qs);
+    const sheetName = cat.substring(0, 31).replace(/[:\/?*\[\]]/g, '-');
+    XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    const safeName = cat.replace(/[^a-z0-9]/gi, '_').substring(0, 50);
+    XLSX.writeFile(wb, 'LLM_Security_' + safeName + '.xlsx');
+    showToast('⬇ Downloaded: ' + cat);
+  } catch(err) {
+    console.error('Category download error:', err);
+    showToast('⚠ Download failed: ' + err.message);
+  }
+}
+
+function downloadAll() {
+  try {
+    const wb = XLSX.utils.book_new();
+    const totalQs = Object.values(DATA).reduce(function(s, qs) { return s + qs.length; }, 0);
+
+    // Summary sheet
+    const summaryRows = [
+      ['LLM Security Questionnaire — Complete Reference'],
+      ['Generated:', new Date().toLocaleDateString()],
+      ['Total Questions:', totalQs],
+      ['Total Categories:', Object.keys(DATA).length],
+      [],
+      ['Category', 'Questions', 'High Priority', 'Medium Priority', 'Low Priority']
+    ];
+    Object.entries(DATA).forEach(function(entry) {
+      var cat = entry[0], qs = entry[1];
+      summaryRows.push([
+        cat,
+        qs.length,
+        qs.filter(function(q){ return q.Priority === 'High'; }).length,
+        qs.filter(function(q){ return q.Priority === 'Medium'; }).length,
+        qs.filter(function(q){ return q.Priority === 'Low'; }).length
+      ]);
+    });
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryRows);
+    wsSummary['!cols'] = [{ wch: 42 }, { wch: 12 }, { wch: 14 }, { wch: 16 }, { wch: 13 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Summary');
+
+    // All questions sheet
+    const allQs = [];
+    Object.values(DATA).forEach(function(qs) { qs.forEach(function(q){ allQs.push(q); }); });
+    const wsAll = buildSheet(allQs);
+    XLSX.utils.book_append_sheet(wb, wsAll, 'All Questions');
+
+    // Per-category sheets
+    Object.entries(DATA).forEach(function(entry) {
+      var cat = entry[0], qs = entry[1];
+      try {
+        const ws = buildSheet(qs);
+        var sheetName = cat.substring(0, 31).replace(/[:\/?*\[\]]/g, '-');
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+      } catch(e) {
+        console.warn('Skipping sheet:', cat, e);
+      }
+    });
+
+    XLSX.writeFile(wb, 'LLM_Security_Questionnaire_Complete.xlsx');
+    showToast('⬇ Complete workbook downloaded! (' + totalQs + ' questions across ' + Object.keys(DATA).length + ' categories)');
+  } catch(err) {
+    console.error('Download All error:', err);
+    alert('Download failed: ' + err.message + '\n\nPlease try downloading individual categories instead.');
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════
+function escHtml(str) {
+  return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+  return String(str || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,' ');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// ═══════════════════════════════════════════════════════
+// START
+// ═══════════════════════════════════════════════════════
+init();
+</script>
+</body>
+</html>
